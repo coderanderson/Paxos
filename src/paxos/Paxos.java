@@ -144,7 +144,7 @@ public class Paxos implements PaxosRMI, Runnable{
 
                     Response[] response = new Response[npaxos];
                     int currProposal = newProposal(maxProposal, me);
-                    System.out.println("proposal of peer " + me + " is " + currProposal);
+                    //System.out.println("proposal of peer " + me + " is " + currProposal);
                     Request req = new Request(currProposal, currThreadSeq, null, 0, 0);
                     response[me] = Prepare(req);
 
@@ -169,9 +169,9 @@ public class Paxos implements PaxosRMI, Runnable{
                         }
                     }
                     System.out.println("2");
-                    System.out.println("Prepare Ok number is: " + prepareOkNum);
+                    //System.out.println("Prepare Ok number is: " + prepareOkNum);
 
-                    maxProposal = currHighestN;
+                    maxProposal = currHighestN > maxProposal ? currHighestN : maxProposal;
 
                     //send accept message
                     if (prepareOkNum > npaxos / 2) {
@@ -195,8 +195,8 @@ public class Paxos implements PaxosRMI, Runnable{
                         if (acceptOkNum > npaxos / 2) {
                             req = new Request(currProposal, currThreadSeq, currHighestV, me, doneSeq[me]);
                             map.put(currThreadSeq, new Instance(paxos.State.Decided, currProposal, currProposal, currHighestV));
-                            System.out.println("" + me + " " + map.get(currThreadSeq).state);
-                            System.out.println("" + me + " " + Status(currThreadSeq).state);
+                            //System.out.println("" + me + " " + map.get(currThreadSeq).state);
+                            //System.out.println("" + me + " " + Status(currThreadSeq).state);
                             for (int i = 0; i < npaxos; i++) {
                                 if (i == me) continue;
                                 response[i] = Call("Decide", req, i);
@@ -211,6 +211,14 @@ public class Paxos implements PaxosRMI, Runnable{
                     if (Status(currThreadSeq).state.equals(paxos.State.Decided)) {
                         break;
                     }
+
+                    maxProposal = maxProposal > currProposal ? maxProposal : currProposal;
+
+                    try {
+                        Thread.sleep(100000);
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
                 }
             }
         }).start();
@@ -222,7 +230,7 @@ public class Paxos implements PaxosRMI, Runnable{
     }
 
     public int newProposal(int maxProposal, int me) {
-        return (maxProposal + 1) * 1000 + me;
+        return (maxProposal + 1) * 10 + me;
     }
 
 
@@ -247,12 +255,12 @@ public class Paxos implements PaxosRMI, Runnable{
                 highestPrepare = req.proposal;
                 state = true;
             } else {
-                System.out.println("now proposal: " + req.proposal + " pre proposal: " + highestPrepare);
+                //System.out.println("now proposal: " + req.proposal + " pre proposal: " + highestPrepare);
                 state = false;
             }
         }
 
-        maxProposal = highestPrepare;
+        maxProposal = (maxProposal > highestPrepare ? maxProposal : highestPrepare);
 
         map.put(req.seq, new Instance(currState, highestPrepare, highestAccept, highestAcceptV));
 
